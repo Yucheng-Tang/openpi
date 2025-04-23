@@ -431,7 +431,7 @@ class TrainConfig:
     # Random seed that will be used by random generators during training.
     seed: int = 42
     # Global batch size.
-    batch_size: int = 32
+    batch_size: int = 2
     # Number of workers to use for the data loader. Increasing this number will speed up data loading but
     # will increase memory and CPU usage.
     num_workers: int = 2
@@ -460,7 +460,7 @@ class TrainConfig:
     # device memory will be reduced but training could potentially be slower.
     # eg. if total device is 4 and fsdp devices is 2; then the model will shard to 2 devices and run
     # data parallel between 2 groups of devices.
-    fsdp_devices: int = 2
+    fsdp_devices: int = 1
 
     @property
     def assets_dirs(self) -> pathlib.Path:
@@ -797,7 +797,7 @@ _CONFIGS = [
                 prompt_from_task=True,
             ),
         ),
-        num_train_steps=20_000,
+        num_train_steps=60_000,
         # Again, make sure to match the model config above when extracting the freeze filter
         # that specifies which parameters should be frozen during LoRA finetuning.
         freeze_filter=pi0.Pi0Config(
@@ -820,7 +820,51 @@ _CONFIGS = [
                 prompt_from_task=True,
             ),
         ),
-        num_train_steps=20_000,
+        num_train_steps=60_000,
+        # Again, make sure to match the model config above when extracting the freeze filter
+        # that specifies which parameters should be frozen during LoRA finetuning.
+        freeze_filter=pi0_fast.Pi0FASTConfig(
+            action_dim=8, action_horizon=20, max_token_len=250, paligemma_variant="gemma_2b_lora"
+        ).get_freeze_filter(),
+        # Turn off EMA for LoRA finetuning.
+        ema_decay=None,
+        wandb_enabled=False,
+    ),
+
+TrainConfig(
+        name="pi0_real_franka_kitchen_low_mem_finetune",
+        model=pi0.Pi0Config(paligemma_variant="gemma_2b_lora", action_expert_variant="gemma_300m_lora"),
+        data=LeRobotFrankaDataConfig(
+            repo_id="tyc1333/real_franka_kitchen",
+            base_config=DataConfig(
+                local_files_only=False,  # Set to True for local-only datasets.
+                prompt_from_task=True,
+            ),
+        ),
+        num_train_steps=60_000,
+        # Again, make sure to match the model config above when extracting the freeze filter
+        # that specifies which parameters should be frozen during LoRA finetuning.
+        freeze_filter=pi0.Pi0Config(
+            paligemma_variant="gemma_2b_lora", action_expert_variant="gemma_300m_lora"
+        ).get_freeze_filter(),
+        # Turn off EMA for LoRA finetuning.
+        ema_decay=None,
+        wandb_enabled=False,
+    ),
+
+    TrainConfig(
+        name="pi0_fast_real_franka_kitchen_low_mem_finetune",
+        model=pi0_fast.Pi0FASTConfig(
+            action_dim=8, action_horizon=20, max_token_len=250, paligemma_variant="gemma_2b_lora"
+        ),
+        data=LeRobotFrankaDataConfig(
+            repo_id="tyc1333/real_franka_kitchen",
+            base_config=DataConfig(
+                local_files_only=False,  # Set to True for local-only datasets.
+                prompt_from_task=True,
+            ),
+        ),
+        num_train_steps=60_000,
         # Again, make sure to match the model config above when extracting the freeze filter
         # that specifies which parameters should be frozen during LoRA finetuning.
         freeze_filter=pi0_fast.Pi0FASTConfig(
