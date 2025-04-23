@@ -10,9 +10,9 @@ from openpi.models import model as _model
 def make_real_franka_example() -> dict:
     """Creates a random input example for the real franka policy."""
     return {
-        "observation/state": np.random.rand(8),
-        "observation/orb_0": np.random.randint(256, size=(180, 320, 3), dtype=np.uint8),
-        "observation/orb_1": np.random.randint(256, size=(180, 320, 3), dtype=np.uint8),
+        "observation/state": np.random.rand(7),
+        "observation/image_0": np.random.randint(256, size=(250, 250, 3), dtype=np.uint8),
+        "observation/image_1": np.random.randint(256, size=(250, 250, 3), dtype=np.uint8),
         "prompt": "do something",
     }
 
