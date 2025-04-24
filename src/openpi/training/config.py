@@ -791,7 +791,7 @@ _CONFIGS = [
         name="pi0_real_franka_low_mem_finetune",
         model=pi0.Pi0Config(paligemma_variant="gemma_2b_lora", action_expert_variant="gemma_300m_lora"),
         data=LeRobotFrankaDataConfig(
-            repo_id="tyc1333/real_franka",
+            repo_id="tyc1333/real_franka_mix",
             base_config=DataConfig(
                 local_files_only=False,  # Set to True for local-only datasets.
                 prompt_from_task=True,
@@ -814,7 +814,7 @@ _CONFIGS = [
             action_dim=8, action_horizon=20, max_token_len=250, paligemma_variant="gemma_2b_lora"
         ),
         data=LeRobotFrankaDataConfig(
-            repo_id="tyc1333/real_franka",
+            repo_id="tyc1333/real_franka_mix",
             base_config=DataConfig(
                 local_files_only=False,  # Set to True for local-only datasets.
                 prompt_from_task=True,
