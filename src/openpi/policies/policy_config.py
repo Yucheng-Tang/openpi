@@ -35,6 +35,7 @@ def create_trained_policy(
     sample_kwargs: dict[str, Any] | None = None,
     default_prompt: str | None = None,
     norm_stats: dict[str, transforms.NormStats] | None = None,
+    local_model_only: bool = False,
 ) -> _policy.Policy:
     """Create a policy from a trained checkpoint.
 
@@ -50,7 +51,11 @@ def create_trained_policy(
             from the checkpoint directory.
     """
     repack_transforms = repack_transforms or transforms.Group()
-    checkpoint_dir = download.maybe_download(str(checkpoint_dir))
+
+    if not local_model_only:
+        checkpoint_dir = download.maybe_download(str(checkpoint_dir))
+    else:
+        checkpoint_dir = pathlib.Path(checkpoint_dir)
 
     logging.info("Loading model...")
     model = train_config.model.load(_model.restore_params(checkpoint_dir / "params", dtype=jnp.bfloat16))
