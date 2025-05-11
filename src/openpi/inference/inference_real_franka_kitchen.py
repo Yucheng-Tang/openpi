@@ -8,11 +8,14 @@ import matplotlib.pyplot as plt
 import jax.numpy as jnp
 
 
-model_config = config.get_config("pi0_real_franka_kitchen_low_mem_finetune")
+model_config = config.get_config("pi0_fast_real_franka_kitchen_low_mem_finetune")
 
 # checkpoint_dir = download.maybe_download("s3://openpi-assets/checkpoints/pi0_fast_droid")
+# checkpoint_dir = ("/media/developer/Samsung SSD/irl_ws/checkpoints/"
+#                   "pi0_real_franka_mix_basemodel_26_04/40000")
+
 checkpoint_dir = ("/media/developer/Samsung SSD/irl_ws/checkpoints/"
-                  "pi0_real_franka_kitchen_basemodel_24_04/59999")
+                      "pi0_fast_real_franka_kitchen_basemodel_28_04_35/25000")
 
 # Create a trained policy.
 policy = policy_config.create_trained_policy(model_config, checkpoint_dir, local_model_only=True)

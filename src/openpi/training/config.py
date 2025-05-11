@@ -224,7 +224,7 @@ class LeRobotAlohaDataConfig(DataConfigFactory):
         )
     )
     # Action keys that will be used to read the action sequence from the dataset.
-    action_sequence_keys: Sequence[str] = ("action",)
+    action_sequence_keys: Sequence[str] = ("actions",)
 
     @override
     def create(self, assets_dirs: pathlib.Path, model_config: _model.BaseModelConfig) -> DataConfig:
@@ -858,10 +858,10 @@ TrainConfig(
     TrainConfig(
         name="pi0_fast_real_franka_kitchen_low_mem_finetune",
         model=pi0_fast.Pi0FASTConfig(
-            action_dim=8, action_horizon=20, max_token_len=250, paligemma_variant="gemma_2b_lora"
+            action_dim=8, action_horizon=35, max_token_len=250, paligemma_variant="gemma_2b_lora"
         ),
         data=LeRobotFrankaDataConfig(
-            repo_id="tyc1333/real_franka_kitchen",
+            repo_id="tyc1333/real_franka_kitchen_2",
             base_config=DataConfig(
                 local_files_only=False,  # Set to True for local-only datasets.
                 prompt_from_task=True,
@@ -872,11 +872,97 @@ TrainConfig(
         # Again, make sure to match the model config above when extracting the freeze filter
         # that specifies which parameters should be frozen during LoRA finetuning.
         freeze_filter=pi0_fast.Pi0FASTConfig(
-            action_dim=8, action_horizon=20, max_token_len=250, paligemma_variant="gemma_2b_lora"
+            action_dim=8, action_horizon=35, max_token_len=250, paligemma_variant="gemma_2b_lora"
         ).get_freeze_filter(),
         # Turn off EMA for LoRA finetuning.
         ema_decay=None,
         wandb_enabled=False,
+    ),
+    TrainConfig(
+        name="pi0_aloha_handover_low_mem_finetune",
+        model=pi0.Pi0Config(paligemma_variant="gemma_2b_lora", action_expert_variant="gemma_300m_lora"),
+        data=LeRobotAlohaDataConfig(
+            repo_id="tyc1333/aloha_right_left_transfer_big_mix_lerobot",
+            # assets=AssetsConfig(
+            #     assets_dir="s3://openpi-assets/checkpoints/pi0_base/assets",
+            #     asset_id="trossen",
+            # ),
+            # default_prompt="handover",
+            repack_transforms=_transforms.Group(
+                inputs=[
+                    _transforms.RepackTransform(
+                        {
+                            "images": {
+                                "cam_high": "images_top",
+                                "cam_left_wrist": "images_wrist_left",
+                                "cam_right_wrist": "images_wrist_right",
+                            },
+                            "state": "state",
+                            "actions": "actions",
+                            "prompt": "prompt",
+                        }
+                    )
+                ]
+            ),
+            base_config=DataConfig(
+                local_files_only=False,  # Set to True for local-only datasets.
+                prompt_from_task=True,
+            ),
+        ),
+        weight_loader=weight_loaders.CheckpointWeightLoader("s3://openpi-assets/checkpoints/pi0_base/params"),
+        num_train_steps=120_000,
+        # Again, make sure to match the model config above when extracting the freeze filter
+        # that specifies which parameters should be frozen during LoRA finetuning.
+        freeze_filter=pi0.Pi0Config(
+            paligemma_variant="gemma_2b_lora", action_expert_variant="gemma_300m_lora"
+        ).get_freeze_filter(),
+        # Turn off EMA for LoRA finetuning.
+        ema_decay=None,
+        wandb_enabled=False,
+        ),
+    TrainConfig(
+        name="pi0_fast_aloha_handover_low_mem_finetune",
+        model=pi0_fast.Pi0FASTConfig(
+            action_dim=14, action_horizon=60, max_token_len=250, paligemma_variant="gemma_2b_lora"
+        ),
+        data=LeRobotAlohaDataConfig(
+            repo_id="tyc1333/aloha_right_left_transfer_big_mix_lerobot",
+            # assets=AssetsConfig(
+            #     assets_dir="s3://openpi-assets/checkpoints/pi0_base/assets",
+            #     asset_id="trossen",
+            # ),
+            # default_prompt="handover",
+            repack_transforms=_transforms.Group(
+                inputs=[
+                    _transforms.RepackTransform(
+                        {
+                            "images": {
+                                "cam_high": "images_top",
+                                "cam_left_wrist": "images_wrist_left",
+                                "cam_right_wrist": "images_wrist_right",
+                            },
+                            "state": "state",
+                            "actions": "actions",
+                            "prompt": "prompt",
+                        }
+                    )
+                ]
+            ),
+            base_config=DataConfig(
+                local_files_only=False,  # Set to True for local-only datasets.
+                prompt_from_task=True,
+            ),
+        ),
+        weight_loader=weight_loaders.CheckpointWeightLoader("s3://openpi-assets/checkpoints/pi0_fast_base/params"),
+        num_train_steps=120_000,
+        # Again, make sure to match the model config above when extracting the freeze filter
+        # that specifies which parameters should be frozen during LoRA finetuning.
+        freeze_filter=pi0_fast.Pi0FASTConfig(
+            action_dim=14, action_horizon=60, max_token_len=250, paligemma_variant="gemma_2b_lora"
+        ).get_freeze_filter(),
+        # Turn off EMA for LoRA finetuning.
+        ema_decay=None,
+        wandb_enabled=True,
     ),
 ]
 

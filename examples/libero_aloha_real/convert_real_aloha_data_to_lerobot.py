@@ -6,11 +6,28 @@ import tensorflow_datasets as tfds
 from lerobot.common.datasets.lerobot_dataset import LEROBOT_HOME
 from lerobot.common.datasets.lerobot_dataset import LeRobotDataset
 
-REPO_NAME = "tyc1333/real_franka_kitchen_2"
-RAW_DATASET_NAME = ("/home/developer/irl_ws/vla_2025/datasets/kit_irl_real_kitchen_non_play_apr25/"
-                    "kit_irl_real_kitchen_non_play_apr25/1.0.0")
-RAW_DATASET_NAME = ("/media/developer/Samsung SSD/irl_ws/datasets/"
-                    "kit_irl_real_kitchen_non_play_apr25_with_seq/1.0.0")
+REPO_NAME = "tyc1333/aloha_right_left_transfer_big_mix_lerobot"
+
+RAW_DATASET_NAME = "/media/developer/740B-DED4/irl_ws/datasets/aloha_right_left_transfer_big_mix/1.0.0"
+
+
+def load_multiple_datasets(base_dir: str, folder_list: list[str], split="100%", num_episodes=None):
+    all_episodes = []
+
+    for folder_name in folder_list:
+        data_dir = f"{base_dir}/{folder_name}/1.0.0"
+        builder = tfds.builder_from_directory(data_dir)
+        raw_dataset = builder.as_dataset(split=f"train[:{split}]")
+        raw_dataset = raw_dataset.prefetch(1)
+
+        if num_episodes is not None:
+            episodes = [e for e in raw_dataset.take(num_episodes)]
+        else:
+            episodes = list(raw_dataset)
+
+        all_episodes.extend(episodes)
+
+    return all_episodes
 
 def main(data_dir: str, *,
          push_to_hub: bool = True,
@@ -23,35 +40,40 @@ def main(data_dir: str, *,
     if output_path.exists():
         shutil.rmtree(output_path)
 
-    # Load the dataset
-    # dataset = tfds.load("libero_10_no_noops", data_dir=data_dir, split="train")
+    # Load single dataset
     raw_dataset = tfds.builder_from_directory(data_dir).as_dataset(split=f'train[:{split}]')
     raw_dataset = raw_dataset.prefetch(1)
     episodes = [e for e in raw_dataset.take(num_episodes)]
 
+    # TODO: state with joint name?
     goal_dataset = LeRobotDataset.create(
         repo_id=REPO_NAME,
-        robot_type="panda",
+        robot_type="aloha",
         fps=10,
         features={
-            "image_0": {
+            "images_top": {
                 "dtype": "image",
-                "shape": (250, 250, 3),
+                "shape": (224, 224, 3),
                 "names": ["height", "width", "channel"],
             },
-            "image_1": {
+            "images_wrist_left": {
                 "dtype": "image",
-                "shape": (250, 250, 3),
+                "shape": (224, 224, 3),
+                "names": ["height", "width", "channel"],
+            },
+            "images_wrist_right": {
+                "dtype": "image",
+                "shape": (224, 224, 3),
                 "names": ["height", "width", "channel"],
             },
             "state": {
                 "dtype": "float32",
-                "shape": (7,),
+                "shape": (14,),
                 "names": ["state"],
             },
             "actions": {
                 "dtype": "float32",
-                "shape": (8,),
+                "shape": (14,),
                 "names": ["actions"],
             },
         },
@@ -71,14 +93,15 @@ def main(data_dir: str, *,
     #     plt.axis('off')
     #     plt.show()
 
-    for episode in raw_dataset:
+    for episode in episodes:
         for step in episode["steps"].as_numpy_iterator():
             # print("timestamp:", step["timestamp"])
             goal_dataset.add_frame(
                 {
-                    "image_0": step["observation"]["image_top"],
-                    "image_1": step["observation"]["image_side"],
-                    "state": step["observation"]["joint_state"],
+                    "images_top": step["observation"]["images_top"],
+                    "images_wrist_left": step["observation"]["images_wrist_left"],
+                    "images_wrist_right": step["observation"]["images_wrist_right"],
+                    "state": step["observation"]["state"],
                     "actions": step["action"],
                 }
             )
@@ -89,10 +112,11 @@ def main(data_dir: str, *,
 
     if push_to_hub:
         goal_dataset.push_to_hub(
-            tags=["real_franka_kitchen_2", "panda", "rlds"],
+            tags=["aloha_right_left_transfer_big_mix_lerobot", "aloha", "rlds"],
             private=False,
             push_videos=True,
             license="apache-2.0",
+            tag="v1.0.0"
         )
 
 
